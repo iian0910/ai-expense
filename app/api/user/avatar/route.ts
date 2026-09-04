@@ -5,7 +5,12 @@ import { getSession } from "@/lib/session";
 import User from "@/models/User";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg", // nonstandard alias some browsers/devices report for JPEG
+  "image/webp": "webp",
+};
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -19,7 +24,8 @@ export async function POST(request: NextRequest) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "請選擇圖片檔案" }, { status: 400 });
   }
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  const extension = ALLOWED_TYPES[file.type.toLowerCase()];
+  if (!extension) {
     return NextResponse.json({ error: "僅支援 JPG、PNG、WebP 圖片" }, { status: 400 });
   }
   if (file.size > MAX_FILE_SIZE) {
@@ -29,7 +35,6 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
-    const extension = file.type.split("/")[1];
     const blob = await put(`avatars/${session.sub}-${Date.now()}.${extension}`, file, {
       access: "public",
       addRandomSuffix: false,

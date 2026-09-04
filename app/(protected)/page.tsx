@@ -15,6 +15,7 @@ import {
   type ExpenseItem,
 } from "@/lib/expenses";
 import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
+import { normalizeImageFile } from "@/lib/image";
 
 type SidebarTab = "menu" | "settings";
 
@@ -174,8 +175,9 @@ export default function Home() {
 
     setUploadingAvatar(true);
     try {
+      const normalizedFile = await normalizeImageFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", normalizedFile);
       const res = await fetch("/api/user/avatar", {
         method: "POST",
         body: formData,
