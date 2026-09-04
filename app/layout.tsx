@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI 記帳",
+  title: "輕鬆記帳",
   description: "AI 智慧記帳助理",
 };
 

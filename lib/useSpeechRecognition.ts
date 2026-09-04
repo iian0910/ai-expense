@@ -32,6 +32,10 @@ export function useSpeechRecognition(lang = "zh-TW") {
     setIsListening(false);
   }, []);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   const start = useCallback(
     (onResult: ResultHandler) => {
       const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
@@ -95,5 +99,5 @@ export function useSpeechRecognition(lang = "zh-TW") {
 
   useEffect(() => stop, [stop]);
 
-  return { isSupported, isListening, error, start, stop };
+  return { isSupported, isListening, error, start, stop, clearError };
 }
