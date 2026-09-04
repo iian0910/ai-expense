@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: "admin" | "member";
+  avatarUrl: string | null;
 }
 
 const AuthContext = createContext<AuthUser | null>(null);

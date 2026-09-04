@@ -43,7 +43,7 @@ export function RegisterForm() {
       <div className="flex w-full max-w-md flex-col justify-center gap-6 px-6 py-16">
         <div className="flex flex-col gap-1 text-center">
           <h1 className="text-2xl font-bold text-black dark:text-zinc-50">
-            AI 記帳
+            輕鬆記帳
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">建立新帳號</p>
         </div>

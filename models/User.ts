@@ -6,6 +6,7 @@ const UserSchema = new Schema(
     password: { type: String, required: true },
     name: { type: String, required: true, trim: true },
     role: { type: String, enum: ["admin", "member"], default: "member" },
+    avatarUrl: { type: String, default: null },
   },
   { timestamps: true }
 );
