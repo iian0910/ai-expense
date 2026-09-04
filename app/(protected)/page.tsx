@@ -14,6 +14,7 @@ import {
   toDateKey,
   type ExpenseItem,
 } from "@/lib/expenses";
+import { useSpeechRecognition } from "@/lib/useSpeechRecognition";
 
 export default function Home() {
   const router = useRouter();
@@ -30,6 +31,15 @@ export default function Home() {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const dayStripRef = useRef<HTMLDivElement>(null);
+  const baseTextRef = useRef("");
+  const finalTranscriptRef = useRef("");
+  const {
+    isSupported: speechSupported,
+    isListening,
+    error: speechError,
+    start: startListening,
+    stop: stopListening,
+  } = useSpeechRecognition("zh-TW");
 
   const daysInMonth = getDaysInMonth(currentMonth);
   const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDay);
@@ -74,6 +84,7 @@ export default function Home() {
         throw new Error(data.error ?? "Request failed");
       }
 
+      stopListening();
       setText("");
       setShowAddSheet(false);
       await loadExpenses();
@@ -82,6 +93,29 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleListening() {
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
+    baseTextRef.current = text;
+    finalTranscriptRef.current = "";
+    startListening((chunk, isFinal) => {
+      if (isFinal) {
+        finalTranscriptRef.current += chunk;
+        setText(`${baseTextRef.current}${finalTranscriptRef.current}`);
+      } else {
+        setText(`${baseTextRef.current}${finalTranscriptRef.current}${chunk}`);
+      }
+    });
+  }
+
+  function closeAddSheet() {
+    stopListening();
+    setShowAddSheet(false);
   }
 
   async function handleLogout() {
@@ -256,7 +290,7 @@ export default function Home() {
         {showAddSheet && (
           <div
             className="fixed inset-0 z-30 flex items-end justify-center bg-black/40"
-            onClick={() => setShowAddSheet(false)}
+            onClick={closeAddSheet}
           >
             <form
               onSubmit={handleSubmit}
@@ -267,15 +301,36 @@ export default function Home() {
               <h2 className="text-base font-semibold text-black dark:text-zinc-50">
                 新增記帳
               </h2>
-              <textarea
-                autoFocus
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="例如：午餐買了排骨便當 120 元"
-                rows={3}
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
-              />
+              <div className="relative">
+                <textarea
+                  autoFocus
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="例如：午餐買了排骨便當 120 元，或按右下角麥克風直接說"
+                  rows={3}
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 pr-12 text-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+                />
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    aria-label={isListening ? "停止語音輸入" : "開始語音輸入"}
+                    aria-pressed={isListening}
+                    className={`absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full text-base shadow-sm active:scale-95 ${
+                      isListening
+                        ? "animate-pulse bg-red-500 text-white"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                    }`}
+                  >
+                    🎤
+                  </button>
+                )}
+              </div>
 
+              {isListening && (
+                <p className="text-xs text-red-500">聆聽中，請開口說話…</p>
+              )}
+              {speechError && <p className="text-sm text-red-500">{speechError}</p>}
               {error && <p className="text-sm text-red-500">{error}</p>}
 
               <button
