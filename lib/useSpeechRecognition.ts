@@ -47,18 +47,32 @@ export function useSpeechRecognition(lang = "zh-TW") {
       recognition.continuous = true;
       recognition.interimResults = true;
 
+      // Don't trust event.resultIndex — on some platforms (e.g. Chrome on
+      // Windows) it unreliably resets to 0, causing already-final results to
+      // be re-emitted and double-counted. Track how many results have been
+      // finalized ourselves instead.
+      let finalizedCount = 0;
+
       recognition.onresult = (event) => {
-        let finalChunk = "";
+        let newFinalChunk = "";
         let interimChunk = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        let currentFinalizedCount = 0;
+
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
-            finalChunk += result[0].transcript;
+            currentFinalizedCount++;
+            if (currentFinalizedCount > finalizedCount) {
+              newFinalChunk += result[0].transcript;
+            }
           } else {
             interimChunk += result[0].transcript;
           }
         }
-        if (finalChunk) onResult(finalChunk, true);
+
+        finalizedCount = currentFinalizedCount;
+
+        if (newFinalChunk) onResult(newFinalChunk, true);
         if (interimChunk) onResult(interimChunk, false);
       };
 
