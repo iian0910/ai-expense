@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { exchangeGoogleCode } from "@/lib/oauth";
 import { mirrorAvatarToBlob } from "@/lib/oauthAvatar";
-import {
-  OAUTH_PENDING_COOKIE,
-  OAUTH_STATE_COOKIE,
-  createPendingOAuthToken,
-} from "@/lib/oauthSession";
+import { OAUTH_STATE_COOKIE } from "@/lib/oauthSession";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/session";
 import User from "@/models/User";
 
@@ -63,42 +59,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (user) {
-      const token = await createSessionToken({
-        sub: user._id.toString(),
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      });
+    if (!user) {
+      // No account found for this identity yet — create one straight away
+      // so first-time Google sign-in goes directly to the home page.
+      const avatarUrl = profile.avatarUrl
+        ? await mirrorAvatarToBlob(profile.avatarUrl, `google-${profile.providerId}`)
+        : null;
 
-      const response = NextResponse.redirect(new URL("/", request.url));
-      response.cookies.set(SESSION_COOKIE, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: SESSION_MAX_AGE,
+      user = await User.create({
+        email,
+        name: profile.name,
+        role: "member",
+        avatarUrl,
+        googleId: profile.providerId,
       });
-      response.cookies.set(OAUTH_STATE_COOKIE, "", CLEAR_STATE_COOKIE);
-      return response;
     }
 
-    // No account found for this identity yet — hand off to the register page
-    // to finish sign-up using the profile info we just retrieved.
-    const pendingToken = await createPendingOAuthToken({
-      providerId: profile.providerId,
-      email,
-      name: profile.name,
-      avatarUrl: profile.avatarUrl,
+    const token = await createSessionToken({
+      sub: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
     });
 
-    const response = NextResponse.redirect(new URL("/register?oauth=1", request.url));
-    response.cookies.set(OAUTH_PENDING_COOKIE, pendingToken, {
+    const response = NextResponse.redirect(new URL("/", request.url));
+    response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 600,
+      maxAge: SESSION_MAX_AGE,
     });
     response.cookies.set(OAUTH_STATE_COOKIE, "", CLEAR_STATE_COOKIE);
     return response;
