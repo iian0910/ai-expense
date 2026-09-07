@@ -3,15 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { OAuthButtons } from "@/components/OAuthButtons";
 
 type Phase = "form" | "loading" | "success" | "error";
 
-export function LoginForm() {
+interface LoginFormProps {
+  initialError?: string | null;
+}
+
+export function LoginForm({ initialError = null }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phase, setPhase] = useState<Phase>("form");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
 
   const isTransitioning = phase !== "form";
 
@@ -91,6 +96,8 @@ export function LoginForm() {
             登入
           </button>
         </form>
+
+        <OAuthButtons disabled={isTransitioning} />
 
         <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
           還沒有帳號？{" "}

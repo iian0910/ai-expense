@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || !user.password) {
       return NextResponse.json({ error: "email 或密碼錯誤" }, { status: 401 });
     }
 

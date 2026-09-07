@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { getPendingOAuthProfile } from "@/lib/oauthSession";
 import { RegisterForm } from "./RegisterForm";
 
 export default async function RegisterPage() {
@@ -8,5 +9,19 @@ export default async function RegisterPage() {
     redirect("/");
   }
 
-  return <RegisterForm />;
+  const pending = await getPendingOAuthProfile();
+
+  return (
+    <RegisterForm
+      oauthProfile={
+        pending
+          ? {
+              name: pending.name,
+              email: pending.email,
+              avatarUrl: pending.avatarUrl,
+            }
+          : null
+      }
+    />
+  );
 }
